@@ -14,6 +14,9 @@ public class Chassis extends OpMode {
     private DcMotor leftBackMotor = null;
     private DcMotor rightClaw = null;
     private DcMotor leftClaw = null;
+    boolean v = false;
+    double speed = 1;
+
 
     @Override
     public void init() {
@@ -61,7 +64,6 @@ public class Chassis extends OpMode {
 
     public void loop() {
         telemetry.addData("status", "running");
-        telemetry.addData("clawPosition", rightClaw.getCurrentPosition());
 
         if (gamepad1.dpad_up) {
             rightClaw.setTargetPosition(100);
@@ -71,11 +73,22 @@ public class Chassis extends OpMode {
             leftClaw.setTargetPosition(0);
         }
 
-        double leftStickX = gamepad1.left_stick_x * 0.5;
+        if (gamepad1.rightBumperWasPressed()) {
+            v = !v;
+            speed = v ? 0.5 : 1;
+        }
 
-        rightFrontMotor.setPower(gamepad1.right_trigger - gamepad1.left_trigger - leftStickX);
-        rightBackMotor.setPower(gamepad1.right_trigger - gamepad1.left_trigger - leftStickX);
-        leftFrontMotor.setPower(gamepad1.right_trigger - gamepad1.left_trigger + leftStickX);
-        leftBackMotor.setPower(gamepad1.right_trigger - gamepad1.left_trigger + leftStickX);
+        double velocity = 1 - (gamepad1.right_trigger * 0.5);
+        double turnStick = gamepad1.right_stick_x * speed;
+        double drive = -gamepad1.left_stick_y * velocity;
+        double strafe = gamepad1.left_stick_x * velocity;
+
+        rightFrontMotor.setPower(drive - turnStick - strafe);
+        rightBackMotor.setPower(drive - turnStick + strafe);
+        leftFrontMotor.setPower(drive + turnStick + strafe);
+        leftBackMotor.setPower(drive + turnStick - strafe);
+
+        telemetry.addData("turnBrake", v);
+        telemetry.addData("driveBrake", velocity);
     }
 }
